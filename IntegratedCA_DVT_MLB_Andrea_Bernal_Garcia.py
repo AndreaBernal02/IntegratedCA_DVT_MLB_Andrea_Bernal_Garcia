@@ -104,7 +104,75 @@ with tab1:
         st.write(
             """
             Each transaction contains a set of items bought together, 
-            making this dataset ideal for Market
+            making this dataset ideal for Market Basket Analysis.
+            """
+        )
 
+    st.markdown("---")
 
+    st.subheader("Why these datasets are suitable for Machine Learning in online retail")
 
+    st.write(
+        """
+        • They contain structured behavioural data (ratings and basket items).  
+        • They include many users, items, and transactions, supporting reliable model training.  
+        • They match real-world retail scenarios such as book recommendations and co-purchase patterns.  
+        """
+    )
+
+with tab2:
+    st.header("Book Ratings and Recommendation Modelling")
+
+    st.subheader("Distribution of ratings (1–5)")
+    fig, ax = plt.subplots()
+    ratings["rating"].value_counts().sort_index().plot(kind="bar", ax=ax)
+    ax.set_xlabel("Rating score")
+    ax.set_ylabel("Number of ratings")
+    ax.set_title("How users rate books")
+    st.pyplot(fig)
+
+    st.write(
+        """
+        Users tend to give more high ratings (4–5), a common pattern in real-world platforms.
+        For machine learning, this distribution affects evaluation and prediction behaviour.
+        """
+    )
+
+    st.subheader(f"Top {top_n} most-rated books (with at least {min_ratings} ratings)")
+
+    book_popularity = ratings.groupby("book_id")["rating"].count().reset_index(name="rating_count")
+    books_pop = books.merge(book_popularity, on="book_id", how="left").fillna({"rating_count": 0})
+    books_filtered = books_pop[books_pop["rating_count"] >= min_ratings]
+    top_books = books_filtered.sort_values("rating_count", ascending=False).head(top_n)
+
+    st.dataframe(
+        top_books[["title", "authors", "rating_count"]].reset_index(drop=True),
+        use_container_width=True
+    )
+
+    st.write(
+        """
+        These popular books provide strong signals for recommendation models.
+        In the notebook analysis, item–item collaborative filtering achieved RMSE ≈ 0.884,
+        demonstrating its suitability for predicting user preferences in an online retail setting.
+        """
+    )
+
+with tab3:
+    st.header("Market Basket Analysis (Bread Basket)")
+
+    st.subheader(f"Top {top_n} most frequently purchased items")
+
+    if "Item" in bakery.columns:
+        item_counts = bakery["Item"].value_counts().head(top_n)
+        st.bar_chart(item_counts)
+
+        st.write(
+            """
+            These items appear most frequently in customer baskets.
+            Market Basket Analysis techniques (Apriori and FP-Growth) can identify
+            co-purchase patterns to support cross-selling and personalised recommendations.
+            """
+        )
+    else:
+        st.write("The bakery dataset does not contain an 'Item' column as expected.")
