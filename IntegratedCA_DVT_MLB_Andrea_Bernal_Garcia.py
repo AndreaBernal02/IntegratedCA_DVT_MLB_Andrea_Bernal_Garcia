@@ -9,7 +9,7 @@
 # <br> ***QUESTION 1)***
 
 # ### Introduction
-# <br>
+# <br>In modern online retail environments, personalised product discovery has become essential for improving user engagement, increasing conversion rates, and maximising customer lifetime value. Recommendation systems play a central role in this process by analysing user interactions and predicting items that individual customers are most likely to enjoy or purchase. Machine learning methods enable these systems to scale to large product catalogues and behavioural datasets, allowing retailers to move beyond static suggestions and toward dynamic, data-driven personalisation.
 
 # ### Data Preparation
 
@@ -73,10 +73,10 @@ books.shape
 # In[40]:
 
 
-ratings = pd.read_csv("ratings.csv")       # user_id, book_id, rating  
-books = pd.read_csv("books.csv")           # book metadata
-book_tags = pd.read_csv("book_tags.csv")   # goodreads_book_id, tag_id, count
-tags = pd.read_csv("tags.csv")             # tag_id, tag_name
+ratings = pd.read_csv("ratings.csv")        
+books = pd.read_csv("books.csv")           
+book_tags = pd.read_csv("book_tags.csv")   
+tags = pd.read_csv("tags.csv")             
 
 ratings.head(), books[['book_id', 'title', 'authors']].head()
 
@@ -521,11 +521,9 @@ print(ii_recs)
 # 
 # Due to memory constraints, item–item collaborative filtering was the optimal choice for this dataset. It successfully produced personalized book recommendations and avoided the computational limitations of user–user similarity. The model’s predictions appear sensible and well-ranked, showing that item-based CF is a strong and scalable approach for large user datasets.
 
-# <br> ***QUESTION 2)***
-
-# ### Market Basket Analysis on Bread Basket Bakery Dataset
+# ### ***QUESTION 2)*** Market Basket Analysis on Bread Basket Bakery Dataset
 # 
-# In this notebook, we perform Market Basket Analysis on the Bread Basket Bakery dataset using two frequent-pattern mining algorithms:
+# In this notebook, we also will perform Market Basket Analysis on the Bread Basket Bakery dataset using two frequent-pattern mining algorithms:
 # 
 # - **Apriori**
 # - **FP-Growth**
@@ -540,7 +538,6 @@ print(ii_recs)
 #    - Frequent itemsets and rules produced
 #    - Computational performance
 #    - Strengths and limitations
-# 
 
 # In[148]:
 
@@ -703,9 +700,8 @@ plt.show()
 
 # - Usually Coffee is the most frequently purchased item.
 # - Items like bread, tea, pastries, and cakes tend to feature strongly.
-# - You can comment on whether this holds for your copy of the data.
 
-# ### Transactions per hour of day
+# ### Transactions per hour Daily
 
 # In[249]:
 
@@ -748,10 +744,17 @@ transactions_per_weekday
 
 
 # - Many analyses find weekends (Sat/Sun) busier than weekdays, but it depends on the bakery.
-# - Comment on which day is the busiest and which is the slowest.
+# 
+# Based on the provided counts:
+# 
+# ***Busiest day:*** Saturday (1,626 transactions)
+# Saturday edges out Friday (1,554) and Monday (1,441), making it the clear peak.
+# 
+# ***Slowest day:*** Wednesday (1,086 transactions)
+# It’s noticeably lower than the other weekdays and well below the weekend numbers.
 
 # ### Heatmap: Hour vs Weekday
-# <br>This helps see patterns like “busy Monday mornings” or “quiet Sunday evenings”.
+# <br>This helps to see patterns like “busy Monday mornings” or “quiet Sunday evenings”.
 
 # In[17]:
 
@@ -808,7 +811,7 @@ plt.tight_layout()
 plt.show()
 
 
-# - Look for the “hot zones” on the heatmap – these are your peak times.
+# - Looking for the “hot zones” on the heatmap – these are our peak times.
 # - Often mid-morning and lunch hours are the busiest.
 
 # ### Market Basket Analysis (Association Rules)
@@ -1183,6 +1186,9 @@ for c in conf_levels:
 
 
 # ### ***QUESTION 3)*** Interactive Dashboard for Adults 65+
+# <br>An interactive dashboard tailored to adults aged 65+ summarises key aspects of the dataset and demonstrates the suitability of this dataset for machine learning applications. The design choices—such as simplified navigation, larger text, high-contrast visuals, and reduced cognitive load—highlight how analytical tools can be made more accessible for older adults.
+# 
+# Taken together, the methods in this assessment illustrate how rich behavioural datasets can support personalisation, product discovery, and decision-making in an online retail business.
 
 # <br> ***Dashboard goals***
 # 
@@ -1212,9 +1218,202 @@ bakery = pd.read_csv("bakery.csv")
 bakery.columns = [c.strip().replace(" ", "_").lower() for c in bakery.columns]
 bakery.head()
 
+import streamlit as st
+import pandas as pd
+import numpy as np
 
-# In[ ]:
+st.set_page_config(
+    page_title="Book & Retail Analytics Dashboard",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
+st.markdown(
+    """
+    <style>
+    /* Larger base font for readability */
+    html, body, [class*="css"]  {
+        font-size: 18px;
+    }
+    /* Bigger headings */
+    h1, h2, h3 {
+        font-weight: 700;
+    }
+    /* Make sidebar text larger */
+    section[data-testid="stSidebar"] div {
+        font-size: 18px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
+@st.cache_data
+def load_data():
+    ratings = pd.read_csv("ratings.csv")
+    books = pd.read_csv("books_.csv")
+    bakery = pd.read_csv("bakery.csv")
+    return ratings, books, bakery
 
+ratings, books, bread = load_data()
 
+st.sidebar.title("Controls")
+st.sidebar.write("Use these simple options to explore the data.")
+
+min_ratings = st.sidebar.slider(
+    "Minimum ratings per book",
+    min_value=0,
+    max_value=2000,
+    value=100,
+    step=50,
+    help="Filter out books with very few ratings for more reliable statistics."
+)
+
+show_top_n = st.sidebar.slider(
+    "Number of top books to show",
+    min_value=5,
+    max_value=20,
+    value=10,
+    step=1
+)
+
+book_popularity = ratings.groupby("book_id")["rating"].count().reset_index(name="rating_count")
+books_pop = books.merge(book_popularity, on="book_id", how="left").fillna({"rating_count": 0})
+books_pop_filtered = books_pop[books_pop["rating_count"] >= min_ratings]
+
+tab1, tab2, tab3 = st.tabs(["Overview", "Book Ratings & ML", "Market Basket"])
+
+with tab1:
+    st.header("Overview of the Datasets")
+    st.write(
+        """
+        This dashboard summarises key patterns in book ratings and retail transactions.
+        It is designed with larger text and simple controls to support adults aged 65+.
+        """
+    )
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.subheader("Goodbooks-10k")
+        n_users = ratings["user_id"].nunique()
+        n_books = ratings["book_id"].nunique()
+        n_ratings = len(ratings)
+        st.metric("Number of users", f"{n_users:,}")
+        st.metric("Number of books", f"{n_books:,}")
+        st.metric("Number of ratings", f"{n_ratings:,}")
+
+    with col2:
+        st.subheader("Book density (suitability for ML)")
+        possible = n_users * n_books
+        density = n_ratings / possible * 100
+        st.write(f"Matrix density: **{density:.4f}%**")
+        st.write(
+            """
+            The user–book rating matrix is very sparse, which is typical and suitable for 
+            collaborative filtering and other recommendation algorithms.
+            """
+        )
+
+    with col3:
+        st.subheader("Bread Basket dataset")
+        n_tx = bread["Transaction"].nunique() if "Transaction" in bread.columns else len(bread)
+        n_items = bread["Item"].nunique() if "Item" in bread.columns else np.nan
+        st.metric("Number of transactions", f"{n_tx:,}")
+        st.metric("Number of unique items", f"{n_items:,}")
+        st.write(
+            """
+            This dataset is suitable for Market Basket Analysis (Apriori, FP-Growth) 
+            because each transaction contains sets of co-purchased items.
+            """
+        )
+
+    st.markdown("---")
+    st.subheader("Why these datasets are suitable for Machine Learning")
+    st.write(
+        """
+        - **Large number of users and items**: supports robust learning of patterns.  
+        - **Many individual ratings/transactions**: enough data to generalise.  
+        - **Structured format** (user–item–rating or transaction–item): ideal input for 
+          recommender systems and association rule learning in an online retail setting.
+        """
+    )
+
+import matplotlib.pyplot as plt
+
+with tab2:
+    st.header("Book Ratings and Suitability for Recommendations")
+    st.subheader("Ratings distribution (1–5)")
+    fig, ax = plt.subplots()
+    ratings["rating"].value_counts().sort_index().plot(kind="bar", ax=ax)
+    ax.set_xlabel("Rating")
+    ax.set_ylabel("Number of ratings")
+    ax.set_title("Distribution of user ratings")
+    st.pyplot(fig)
+
+    st.write(
+        """
+        We observe more ratings at the higher end (4–5), which is common in real systems.
+        This skew is important for machine learning because:
+        - It affects evaluation metrics (e.g., RMSE tends to be lower if many ratings are high).
+        - Models must learn to distinguish genuinely excellent items from generally “liked” ones.
+        """
+    )
+    st.subheader(f"Top {show_top_n} most-rated books (after filtering)")
+    top_books = books_pop_filtered.sort_values("rating_count", ascending=False).head(show_top_n)
+    st.dataframe(
+        top_books[["title", "authors", "rating_count"]].reset_index(drop=True),
+        use_container_width=True
+    )
+
+    st.write(
+        """
+        These highly rated books illustrate how **popularity signals** can be exploited by 
+        recommendation algorithms (e.g., item–item collaborative filtering). Frequently rated 
+        books provide strong information for similarity-based methods.
+        """
+    )
+
+st.markdown("### Model performance (from notebook)")
+    st.write(
+        """
+        - Item–Item Collaborative Filtering (KNNBasic, cosine similarity) achieved 
+          **RMSE ≈ 0.884** on a test set.  
+        - This indicates that the model can predict ratings reasonably well within the 
+          1–5 rating scale, supporting personalised book recommendations for an 
+          online retail platform.
+        """
+    )
+
+with tab3:
+    st.header("Market Basket Analysis (Bread Basket)")
+
+    st.subheader("Most frequent items")
+    if "Item" in bread.columns:
+        item_counts = bread["Item"].value_counts().head(show_top_n)
+        st.bar_chart(item_counts)
+
+        st.write(
+            """
+            These items appear most frequently in transactions and drive many of the 
+            strongest association rules. Machine learning models such as Apriori and 
+            FP-Growth can use this structure to suggest **cross-sell combinations** 
+            in an online retail setting.
+            """
+        )
+
+    st.markdown("### Apriori vs FP-Growth (from your analysis)")
+    st.write(
+        """
+        - Both algorithms identified **33 frequent itemsets** at a 2% support threshold.  
+        - Apriori runtime: **0.0872 seconds**  
+        - FP-Growth runtime: **0.6718 seconds**  
+        
+        Although Apriori was faster on this moderately sized dataset, FP-Growth scales 
+        better to larger, denser data and can uncover deeper multi-item patterns.  
+        These association rules can be used to design product bundles and 
+        “customers who bought X also bought Y” suggestions.
+        """
+    )
+
+streamlit run app.py
