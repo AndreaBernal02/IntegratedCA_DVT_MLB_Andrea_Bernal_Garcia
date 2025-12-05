@@ -153,7 +153,7 @@ with tab2:
 
     st.subheader(f"Top {top_n} most-rated books (with at least {min_ratings} ratings)")
 
-    book_popularity = ratings.groupby("book_id")["rating"].count().reset_index(name="rating_count"])
+    book_popularity = ratings.groupby("book_id")["rating"].count().reset_index(name="rating_count")
     books_pop = books.merge(book_popularity, on="book_id", how="left").fillna({"rating_count": 0})
     books_filtered = books_pop[books_pop["rating_count"] >= min_ratings]
     top_books = books_filtered.sort_values("rating_count", ascending=False).head(top_n)
