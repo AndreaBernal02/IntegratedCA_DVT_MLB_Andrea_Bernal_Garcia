@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 st.set_page_config(
     page_title="Book & Retail ML Dashboard",
@@ -30,7 +31,13 @@ st.markdown(
 def load_data():
     ratings = pd.read_csv("ratings.csv")
     books = pd.read_csv("books.csv")
-    bakery = pd.read_csv("bakery.csv")
+
+    bakery = None
+    if os.path.exists("bakery.csv"):
+        bakery = pd.read_csv("bakery.csv")
+    elif os.path.exists("BreadBasket_DMS.csv"):
+        bakery = pd.read_csv("BreadBasket_DMS.csv")
+
     return ratings, books, bakery
 
 ratings, books, bakery = load_data()
@@ -91,16 +98,22 @@ with tab1:
 
     with col3:
         st.subheader("Bread Basket (Bakery) Data")
-        if "Transaction" in bakery.columns:
+        if bakery is not None and "Transaction" in bakery.columns:
             n_tx = bakery["Transaction"].nunique()
-        else:
+        elif bakery is not None:
             n_tx = len(bakery)
-        if "Item" in bakery.columns:
-            n_items = bakery["Item"].nunique()
         else:
-            n_items = np.nan
-        st.metric("Number of transactions", f"{n_tx:,}")
-        st.metric("Number of unique items", f"{n_items:,}")
+            n_tx = "N/A"
+
+        if bakery is not None and "Item" in bakery.columns:
+            n_items = bakery["Item"].nunique()
+        elif bakery is not None:
+            n_items = "N/A"
+        else:
+            n_items = "N/A"
+
+        st.metric("Number of transactions", f"{n_tx}")
+        st.metric("Number of unique items", f"{n_items}")
         st.write(
             """
             Each transaction contains a set of items bought together, 
@@ -140,7 +153,7 @@ with tab2:
 
     st.subheader(f"Top {top_n} most-rated books (with at least {min_ratings} ratings)")
 
-    book_popularity = ratings.groupby("book_id")["rating"].count().reset_index(name="rating_count")
+    book_popularity = ratings.groupby("book_id")["rating"].count().reset_index(name="rating_count"])
     books_pop = books.merge(book_popularity, on="book_id", how="left").fillna({"rating_count": 0})
     books_filtered = books_pop[books_pop["rating_count"] >= min_ratings]
     top_books = books_filtered.sort_values("rating_count", ascending=False).head(top_n)
@@ -157,3 +170,29 @@ with tab2:
         demonstrating its suitability for predicting user preferences in an online retail setting.
         """
     )
+
+with tab3:
+    st.header("Market Basket Analysis (Bread Basket)")
+
+    if bakery is None:
+        st.warning(
+            "The bakery dataset file (bakery.csv or BreadBasket_DMS.csv) "
+            "is not available in this app. The Market Basket visualisation "
+            "cannot be displayed here, but the analysis is described in the report."
+        )
+    else:
+        st.subheader(f"Top {top_n} most frequently purchased items")
+
+        if "Item" in bakery.columns:
+            item_counts = bakery["Item"].value_counts().head(top_n)
+            st.bar_chart(item_counts)
+
+            st.write(
+                """
+                These items appear most often in customer baskets.
+                Market Basket Analysis techniques (Apriori and FP-Growth) can identify
+                co-purchase patterns to support cross-selling and personalised recommendations.
+                """
+            )
+        else:
+            st.write("The bakery dataset does not contain an 'Item' column as expected.")
