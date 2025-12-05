@@ -234,7 +234,7 @@ plt.show()
 #book_tags_full = book_tags.merge(tags, on="tag_id", how="left")
 
 #top_book_tags = (
-    book_tags_full
+#    book_tags_full
     .sort_values(['goodreads_book_id', 'count'], ascending=[True, False])
     .groupby('goodreads_book_id')['tag_name']
     .apply(lambda x: ' '.join(x.head(10)))  # top 10 tags
