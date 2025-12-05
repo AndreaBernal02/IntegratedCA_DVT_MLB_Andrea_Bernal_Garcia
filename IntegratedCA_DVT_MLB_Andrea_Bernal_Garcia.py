@@ -60,7 +60,7 @@ top_n = st.sidebar.slider(
 
 tab1, tab2, tab3 = st.tabs(["Overview", "Book Ratings & ML", "Market Basket"])
 
-ith tab1:
+with tab1:
     st.header("Overview of the Datasets")
 
     st.write(
@@ -71,7 +71,6 @@ ith tab1:
         The design uses **larger text, simple layout, and minimal controls** to support adults aged 65+.
         """
     )
-
 
 col1, col2, col3 = st.columns(3)
 
