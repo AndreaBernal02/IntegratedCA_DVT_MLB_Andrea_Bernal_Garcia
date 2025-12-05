@@ -1398,25 +1398,6 @@ with tab2:
         """
     )
 
-with tab3:
-    st.header("Market Basket Analysis (Bread Basket)")
-
-    st.subheader(f"Top {top_n} most frequently purchased items")
-
-    if "Item" in bakery.columns:
-        item_counts = bakery["Item"].value_counts().head(top_n)
-        st.bar_chart(item_counts)
-
-        st.write(
-            """
-            These items appear most frequently in customer baskets.
-            Market Basket Analysis techniques (Apriori and FP-Growth) can identify
-            co-purchase patterns to support cross-selling and personalised recommendations.
-            """
-        )
-    else:
-        st.write("The bakery dataset does not contain an 'Item' column as expected.")
-
 
 
 
