@@ -231,9 +231,9 @@ plt.show()
 # In[101]:
 
 
-book_tags_full = book_tags.merge(tags, on="tag_id", how="left")
+#book_tags_full = book_tags.merge(tags, on="tag_id", how="left")
 
-top_book_tags = (
+#top_book_tags = (
     book_tags_full
     .sort_values(['goodreads_book_id', 'count'], ascending=[True, False])
     .groupby('goodreads_book_id')['tag_name']
@@ -241,7 +241,7 @@ top_book_tags = (
     .reset_index()
 )
 
-books_cb = books.merge(top_book_tags, on='goodreads_book_id', how='left')
+#books_cb = books.merge(top_book_tags, on='goodreads_book_id', how='left')
 
 books_cb['content'] = (
     books_cb['title'].fillna('') + ' ' +
