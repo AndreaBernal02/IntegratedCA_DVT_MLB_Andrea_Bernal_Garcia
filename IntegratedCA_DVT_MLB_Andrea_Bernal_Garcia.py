@@ -13,25 +13,25 @@
 
 # ### Data Preparation
 
-# In[129]:
+# In[47]:
 
 
 #!pip install matplotlib
 
 
-# In[131]:
+# In[49]:
 
 
 #!pip install mlxtend scikit-learn
 
 
-# In[3]:
+# In[51]:
 
 
 #!pip install scikit-surprise --quiet
 
 
-# In[200]:
+# In[53]:
 
 
 import streamlit as st
@@ -54,7 +54,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 plt.style.use('default')
 
 
-# In[35]:
+# In[71]:
 
 
 books = pd.read_csv("books.csv")
@@ -64,13 +64,13 @@ books
 # <br> ***Characterisation of the data set:***
 # <br> size; number of attributes: (10000 rows, 23 columns)
 
-# In[38]:
+# In[74]:
 
 
 books.shape
 
 
-# In[40]:
+# In[76]:
 
 
 ratings = pd.read_csv("ratings.csv")        
@@ -81,25 +81,25 @@ tags = pd.read_csv("tags.csv")
 ratings.head(), books[['book_id', 'title', 'authors']].head()
 
 
-# In[42]:
+# In[78]:
 
 
 books.isnull().sum()
 
 
-# In[44]:
+# In[80]:
 
 
 ratings.head(), ratings.shape
 
 
-# In[46]:
+# In[82]:
 
 
 ratings['rating'].describe()
 
 
-# In[48]:
+# In[84]:
 
 
 books[['book_id', 'goodreads_book_id', 'title', 'authors']].head()
@@ -108,7 +108,7 @@ books[['book_id', 'goodreads_book_id', 'title', 'authors']].head()
 # ### Exploratory Data Analysis
 # ***Ratings distribution***
 
-# In[53]:
+# In[87]:
 
 
 print("Ratings shape:", ratings.shape)
@@ -137,7 +137,7 @@ plt.show()
 
 # ### Number of ratings per user
 
-# In[60]:
+# In[91]:
 
 
 user_counts = ratings['user_id'].value_counts()
@@ -168,7 +168,7 @@ plt.show()
 
 # ### Number of ratings per book
 
-# In[64]:
+# In[95]:
 
 
 book_counts = ratings['book_id'].value_counts()
@@ -228,7 +228,7 @@ plt.show()
 
 # ### Building content representation
 
-# In[71]:
+# In[101]:
 
 
 book_tags_full = book_tags.merge(tags, on="tag_id", how="left")
@@ -262,7 +262,7 @@ books_cb[['book_id', 'title', 'authors', 'content']].head()
 
 # ### TF-IDF and similarity matrix
 
-# In[76]:
+# In[105]:
 
 
 tfidf = TfidfVectorizer(stop_words='english')
@@ -284,7 +284,7 @@ idx_to_book_id = pd.Series(books_cb['book_id'].values, index=books_cb.index)
 # We then compute a **cosine similarity matrix** between all book vectors.  
 # Two books are considered similar if their descriptions share many distinctive terms (e.g. same genre, similar keywords, same author).
 
-# In[79]:
+# In[107]:
 
 
 def recommend_content_based(book_title, top_n=10):
@@ -350,7 +350,7 @@ cb_recs
 
 # ### Preparing data for Surprise
 
-# In[89]:
+# In[114]:
 
 
 from surprise import Dataset, Reader
@@ -370,7 +370,7 @@ trainset, testset = surprise_train_test_split(data, test_size=0.2, random_state=
 
 # ### User–User Collaborative Filtering
 
-# In[100]:
+# In[118]:
 
 
 from surprise import KNNBasic
@@ -406,7 +406,7 @@ print("Item–Item CF RMSE:", rmse_item)
 
 # ### Item–Item Collaborative Filtering
 
-# In[106]:
+# In[122]:
 
 
 sim_options_item = {
@@ -436,7 +436,7 @@ print("Item–Item CF RMSE:", rmse_item)
 
 # ### Top-N recommendations for a user
 
-# In[118]:
+# In[126]:
 
 
 all_book_ids = ratings['book_id'].unique()
@@ -464,7 +464,7 @@ ii_recs = recommend_for_user(algo_item, target_user, ratings, books, top_n=5)
 ii_recs 
 
 
-# In[120]:
+# In[127]:
 
 
 print(ii_recs)
@@ -539,7 +539,7 @@ print(ii_recs)
 #    - Computational performance
 #    - Strengths and limitations
 
-# In[148]:
+# In[136]:
 
 
 import pandas as pd
@@ -548,32 +548,32 @@ import time
 import seaborn as sns
 
 
-# In[150]:
+# In[138]:
 
 
 #!pip install -q mlxtend openpyxl
 
 
-# In[152]:
+# In[140]:
 
 
 from mlxtend.frequent_patterns import apriori, fpgrowth, association_rules
 
 
-# In[158]:
+# In[142]:
 
 
 bakery = pd.read_csv("bakery.csv")
 bakery
 
 
-# In[166]:
+# In[144]:
 
 
 bakery.info()
 
 
-# In[168]:
+# In[146]:
 
 
 bakery.describe(include="all").T
@@ -581,54 +581,54 @@ bakery.describe(include="all").T
 
 # ### Data cleaning & feature engineering
 
-# In[ ]:
+# In[149]:
 
 
 bakery.columns = [c.strip().replace(" ", "_").lower() for c in bakery.columns]
 bakery.head()
 
 
-# In[187]:
+# In[151]:
 
 
 print(bakery.columns)
 
 
-# In[189]:
+# In[159]:
 
 
-bakery['DateTime'].head()
+bakery['datetime'].head()
 
 
-# In[194]:
+# In[157]:
 
 
-bakery['DateTime'] = pd.to_datetime(bakery['DateTime'], errors='coerce')
+bakery.columns
 
 
-# In[196]:
+# In[161]:
 
 
-print(bakery['DateTime'].dtype)
-print(bakery['DateTime'].head())
+bakery['datetime'] = pd.to_datetime(bakery['datetime'], errors='coerce')
 
 
-# In[208]:
+# In[165]:
 
 
-bakery['date'] = bakery['DateTime'].dt.date
-bakery['time'] = bakery['DateTime'].dt.time
-bakery['hour'] = bakery['DateTime'].dt.hour
-bakery['weekday'] = bakery['DateTime'].dt.day_name()
+print(bakery['datetime'].dtype)
+print(bakery['datetime'].head())
 
 
-# In[214]:
+# In[172]:
 
 
+bakery['date'] = bakery['datetime'].dt.date
+bakery['time'] = bakery['datetime'].dt.time
+bakery['hour'] = bakery['datetime'].dt.hour
+bakery['weekday'] = bakery['datetime'].dt.day_name()
 
 
-
-# In[220]:
+# In[176]:
 
 
 def part_of_day(h):
@@ -642,21 +642,21 @@ def part_of_day(h):
         return "Night"
 
 bakery['part_of_day'] = bakery['hour'].apply(part_of_day)
-bakery[['DateTime','hour','weekday','part_of_day']].head()
+bakery[['datetime','hour','weekday','part_of_day']].head()
 
 
 # ### Checking for missing values
 
-# In[223]:
+# In[179]:
 
 
 bakery.isna().sum()
 
 
-# In[229]:
+# In[183]:
 
 
-bakery = bakery.dropna(subset=['TransactionNo', 'Items'])
+bakery = bakery.dropna(subset=['transactionno', 'items'])
 bakery.shape
 
 
@@ -667,26 +667,26 @@ bakery.shape
 # - Number of unique items
 # - Top-selling items
 
-# In[237]:
+# In[189]:
 
 
-n_transactions = bakery['TransactionNo'].nunique()
-n_items = bakery['Items'].nunique()
+n_transactions = bakery['transactionno'].nunique()
+n_items = bakery['items'].nunique()
 
 print("Number of transactions:", n_transactions)
 print("Number of unique items:", n_items)
 
 
-# In[239]:
+# In[191]:
 
 
-top_items = bakery['Items'].value_counts().head(15)
+top_items = bakery['items'].value_counts().head(15)
 top_items
 
 
 # ### Top 15 most common items
 
-# In[242]:
+# In[194]:
 
 
 plt.figure(figsize=(10, 6))
@@ -703,10 +703,10 @@ plt.show()
 
 # ### Transactions per hour Daily
 
-# In[249]:
+# In[201]:
 
 
-transactions_per_hour = bakery.groupby('hour')['TransactionNo'].nunique()
+transactions_per_hour = bakery.groupby('hour')['transactionno'].nunique()
 
 plt.figure(figsize=(10, 5))
 transactions_per_hour.plot(kind='bar')
@@ -725,11 +725,11 @@ transactions_per_hour
 
 # ### Transactions by weekday
 
-# In[253]:
+# In[207]:
 
 
 weekday_order = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
-transactions_per_weekday = bakery.groupby('weekday')['TransactionNo'].nunique().reindex(weekday_order)
+transactions_per_weekday = bakery.groupby('weekday')['transactionno'].nunique().reindex(weekday_order)
 
 plt.figure(figsize=(10, 5))
 transactions_per_weekday.plot(kind='bar')
@@ -756,28 +756,28 @@ transactions_per_weekday
 # ### Heatmap: Hour vs Weekday
 # <br>This helps to see patterns like “busy Monday mornings” or “quiet Sunday evenings”.
 
-# In[17]:
+# In[211]:
 
 
 print(bakery.columns)
 
 
-# In[23]:
+# In[215]:
 
 
 import pandas as pd
 
-bakery['DateTime'] = pd.to_datetime(bakery['DateTime'])
+bakery['datetime'] = pd.to_datetime(bakery['datetime'])
 
 
-# In[25]:
+# In[219]:
 
 
-bakery['weekday'] = bakery['DateTime'].dt.day_name()
-bakery['hour'] = bakery['DateTime'].dt.hour
+bakery['weekday'] = bakery['datetime'].dt.day_name()
+bakery['hour'] = bakery['datetime'].dt.hour
 
 
-# In[27]:
+# In[221]:
 
 
 weekday_order = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
@@ -788,17 +788,17 @@ bakery['weekday'] = pd.Categorical(
     ordered=True)
 
 
-# In[33]:
+# In[225]:
 
 
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 tx_heatmap = (
-    bakery.groupby(['weekday','hour'])['TransactionNo']
+    bakery.groupby(['weekday','hour'])['transactionno']
           .nunique()
           .reset_index()
-          .pivot(index='weekday', columns='hour', values='TransactionNo')
+          .pivot(index='weekday', columns='hour', values='transactionno')
           .reindex(weekday_order)
 )
 
@@ -820,11 +820,11 @@ plt.show()
 # 2. Mine frequent itemsets using the Apriori algorithm
 # 3. Derive association rules (with metrics like support, confidence, and lift)
 
-# In[44]:
+# In[231]:
 
 
 basket = (
-    bakery.groupby(['TransactionNo', 'Items'])['Items']
+    bakery.groupby(['transactionno', 'items'])['items']
       .count()
       .unstack()
       .fillna(0))
@@ -839,13 +839,13 @@ basket_binary.head()
 # - Start with min_support=0.02 (items appearing in ≥2% of transactions).
 # - Increase threshold for fewer, stronger itemsets; decrease to get more.
 
-# In[51]:
+# In[235]:
 
 
 from mlxtend.frequent_patterns import apriori, association_rules
 
 
-# In[81]:
+# In[237]:
 
 
 frequent_itemsets = apriori(
@@ -866,7 +866,7 @@ frequent_itemsets.sort_values('support', ascending=False).head(10)
 # - Confidence (how often B is bought when A is bought)
 # - Lift (how much A increases probability of B vs random)
 
-# In[58]:
+# In[241]:
 
 
 rules = association_rules(
@@ -891,7 +891,7 @@ rules_sorted.head(10)
 # - high confidence,
 # - lift significantly > 1.
 
-# In[62]:
+# In[244]:
 
 
 strong_rules = rules[
@@ -916,26 +916,26 @@ strong_rules.head(15)
 #   -Menu design (combos to feature together)
 #   -Promotions (bundle pricing).
 
-# In[91]:
+# In[247]:
 
 
 print(basket['Toast'].sum())
 print(basket['Coffee'].sum())
 
 
-# In[136]:
+# In[249]:
 
 
 basket_binary.dtypes
 
 
-# In[138]:
+# In[251]:
 
 
 basket_binary = basket_binary.astype(bool)
 
 
-# In[140]:
+# In[253]:
 
 
 from mlxtend.frequent_patterns import fpgrowth, association_rules
@@ -944,20 +944,20 @@ fp_sets = fpgrowth(basket_binary, min_support=0.02, use_colnames=True)
 fp_rules = association_rules(fp_sets, metric="lift", min_threshold=1)
 
 
-# In[142]:
+# In[257]:
 
 
 basket_bakery = (
     bakery
-      .groupby(['TransactionNo', 'Items'])['Items']
+      .groupby(['transactionno', 'items'])['items']
       .count()
       .unstack()
       .reset_index()
       .fillna(0)
-      .set_index('TransactionNo'))
+      .set_index('transactionno'))
 
 
-# In[144]:
+# In[259]:
 
 
 def encode_units(x):
@@ -969,13 +969,13 @@ def encode_units(x):
 basket_sets_bakery = basket_bakery.map(encode_units)
 
 
-# In[146]:
+# In[261]:
 
 
 basket_sets_bakery = basket_sets_bakery.astype(bool)
 
 
-# In[148]:
+# In[263]:
 
 
 basket_sets_bakery = basket_sets_bakery.astype(bool)
@@ -997,7 +997,7 @@ rules_bakery_filtered = rules_bakery[
     (rules_bakery['confidence'] >= 0.5)]
 
 
-# In[150]:
+# In[265]:
 
 
 strong_rules = rules[
@@ -1009,13 +1009,13 @@ strong_rules = rules[
 strong_rules.head(15)
 
 
-# In[152]:
+# In[267]:
 
 
 whos
 
 
-# In[154]:
+# In[269]:
 
 
 from mlxtend.frequent_patterns import apriori, association_rules
@@ -1044,7 +1044,7 @@ rules_ap.head()
 
 # ### Visualizing rules
 
-# In[157]:
+# In[272]:
 
 
 plt.figure(figsize=(8, 6))
@@ -1091,7 +1091,7 @@ plt.show()
 # 
 # Dataset is not huge, memory is not a problem then FP-Growth is more efficient overall.
 
-# In[163]:
+# In[278]:
 
 
 from mlxtend.frequent_patterns import fpgrowth
@@ -1103,7 +1103,7 @@ fp_rules = association_rules(fp_sets, metric="lift", min_threshold=1)
 # ***Findings:***
 # Both Apriori and FP-Growth identify similar high-support rules in the Bread Basket dataset, but FP-Growth is faster, scales better, and uncovers deeper and more diverse itemsets due to its tree-based approach, while Apriori produces fewer but more conservative itemsets because of candidate pruning.
 
-# In[170]:
+# In[281]:
 
 
 from mlxtend.frequent_patterns import apriori, fpgrowth
@@ -1125,7 +1125,7 @@ print(f"Apriori time: {ap_time:.4f} seconds")
 print(f"FP-Growth time: {fp_time:.4f} seconds")
 
 
-# In[172]:
+# In[283]:
 
 
 import matplotlib.pyplot as plt
@@ -1145,7 +1145,7 @@ plt.tight_layout()
 plt.show()
 
 
-# In[174]:
+# In[285]:
 
 
 pair_sets = fp_sets[fp_sets['itemsets'].apply(lambda x: len(x) == 2)].copy()
@@ -1162,7 +1162,7 @@ plt.tight_layout()
 plt.show()
 
 
-# In[176]:
+# In[287]:
 
 
 supports = [0.10, 0.05, 0.03, 0.02, 0.01]
@@ -1175,7 +1175,7 @@ for s in supports:
 results
 
 
-# In[178]:
+# In[289]:
 
 
 conf_levels = [0.8, 0.7, 0.6, 0.5]
@@ -1199,221 +1199,46 @@ for c in conf_levels:
 # Frequent co-occurrences of items (basis for recommendation systems)
 # Time-based demand cycles (basis for forecasting models)
 
-# In[203]:
+# In[293]:
 
 
 #pip install streamlit pandas numpy matplotlib seaborn mlxtend
 
 
-# In[207]:
+# In[295]:
 
 
 #!pip install streamlit mlxtend seaborn
 
 
-# In[213]:
+# In[297]:
 
 
 bakery = pd.read_csv("bakery.csv")
 bakery.columns = [c.strip().replace(" ", "_").lower() for c in bakery.columns]
 bakery.head()
 
-import streamlit as st
-import pandas as pd
-import numpy as np
 
-st.set_page_config(
-    page_title="Book & Retail Analytics Dashboard",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# In[299]:
 
-st.markdown(
-    """
-    <style>
-    /* Larger base font for readability */
-    html, body, [class*="css"]  {
-        font-size: 18px;
-    }
-    /* Bigger headings */
-    h1, h2, h3 {
-        font-weight: 700;
-    }
-    /* Make sidebar text larger */
-    section[data-testid="stSidebar"] div {
-        font-size: 18px;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
 
-@st.cache_data
-def load_data():
-    ratings = pd.read_csv("ratings.csv")
-    books = pd.read_csv("books_.csv")
-    bakery = pd.read_csv("bakery.csv")
-    return ratings, books, bakery
+ratings[['user_id', 'book_id', 'rating']].to_csv("ratings.csv", index=False)
 
-ratings, books, bread = load_data()
 
-st.sidebar.title("Controls")
-st.sidebar.write("Use these simple options to explore the data.")
+# In[301]:
 
-min_ratings = st.sidebar.slider(
-    "Minimum ratings per book",
-    min_value=0,
-    max_value=2000,
-    value=100,
-    step=50,
-    help="Filter out books with very few ratings for more reliable statistics."
-)
 
-show_top_n = st.sidebar.slider(
-    "Number of top books to show",
-    min_value=5,
-    max_value=20,
-    value=10,
-    step=1
-)
+books.to_csv("books.csv", index=False)
 
-book_popularity = ratings.groupby("book_id")["rating"].count().reset_index(name="rating_count")
-books_pop = books.merge(book_popularity, on="book_id", how="left").fillna({"rating_count": 0})
-books_pop_filtered = books_pop[books_pop["rating_count"] >= min_ratings]
 
-tab1, tab2, tab3 = st.tabs(["Overview", "Book Ratings & ML", "Market Basket"])
+# In[305]:
 
-with tab1:
-    st.header("Overview of the Datasets")
-    st.write(
-        """
-        This dashboard summarises key patterns in book ratings and retail transactions.
-        It is designed with larger text and simple controls to support adults aged 65+.
-        """
-    )
 
-    col1, col2, col3 = st.columns(3)
+bakery.to_csv("bakery.csv", index=False)
 
-    with col1:
-        st.subheader("Goodbooks-10k")
-        n_users = ratings["user_id"].nunique()
-        n_books = ratings["book_id"].nunique()
-        n_ratings = len(ratings)
-        st.metric("Number of users", f"{n_users:,}")
-        st.metric("Number of books", f"{n_books:,}")
-        st.metric("Number of ratings", f"{n_ratings:,}")
 
-    with col2:
-        st.subheader("Book density (suitability for ML)")
-        possible = n_users * n_books
-        density = n_ratings / possible * 100
-        st.write(f"Matrix density: **{density:.4f}%**")
-        st.write(
-            """
-            The user–book rating matrix is very sparse, which is typical and suitable for 
-            collaborative filtering and other recommendation algorithms.
-            """
-        )
+# In[ ]:
 
-    with col3:
-        st.subheader("Bread Basket dataset")
-        n_tx = bread["Transaction"].nunique() if "Transaction" in bread.columns else len(bread)
-        n_items = bread["Item"].nunique() if "Item" in bread.columns else np.nan
-        st.metric("Number of transactions", f"{n_tx:,}")
-        st.metric("Number of unique items", f"{n_items:,}")
-        st.write(
-            """
-            This dataset is suitable for Market Basket Analysis (Apriori, FP-Growth) 
-            because each transaction contains sets of co-purchased items.
-            """
-        )
 
-    st.markdown("---")
-    st.subheader("Why these datasets are suitable for Machine Learning")
-    st.write(
-        """
-        - **Large number of users and items**: supports robust learning of patterns.  
-        - **Many individual ratings/transactions**: enough data to generalise.  
-        - **Structured format** (user–item–rating or transaction–item): ideal input for 
-          recommender systems and association rule learning in an online retail setting.
-        """
-    )
 
-import matplotlib.pyplot as plt
 
-with tab2:
-    st.header("Book Ratings and Suitability for Recommendations")
-    st.subheader("Ratings distribution (1–5)")
-    fig, ax = plt.subplots()
-    ratings["rating"].value_counts().sort_index().plot(kind="bar", ax=ax)
-    ax.set_xlabel("Rating")
-    ax.set_ylabel("Number of ratings")
-    ax.set_title("Distribution of user ratings")
-    st.pyplot(fig)
-
-    st.write(
-        """
-        We observe more ratings at the higher end (4–5), which is common in real systems.
-        This skew is important for machine learning because:
-        - It affects evaluation metrics (e.g., RMSE tends to be lower if many ratings are high).
-        - Models must learn to distinguish genuinely excellent items from generally “liked” ones.
-        """
-    )
-    st.subheader(f"Top {show_top_n} most-rated books (after filtering)")
-    top_books = books_pop_filtered.sort_values("rating_count", ascending=False).head(show_top_n)
-    st.dataframe(
-        top_books[["title", "authors", "rating_count"]].reset_index(drop=True),
-        use_container_width=True
-    )
-
-    st.write(
-        """
-        These highly rated books illustrate how **popularity signals** can be exploited by 
-        recommendation algorithms (e.g., item–item collaborative filtering). Frequently rated 
-        books provide strong information for similarity-based methods.
-        """
-    )
-
-st.markdown("### Model performance (from notebook)")
-    st.write(
-        """
-        - Item–Item Collaborative Filtering (KNNBasic, cosine similarity) achieved 
-          **RMSE ≈ 0.884** on a test set.  
-        - This indicates that the model can predict ratings reasonably well within the 
-          1–5 rating scale, supporting personalised book recommendations for an 
-          online retail platform.
-        """
-    )
-
-with tab3:
-    st.header("Market Basket Analysis (Bread Basket)")
-
-    st.subheader("Most frequent items")
-    if "Item" in bread.columns:
-        item_counts = bread["Item"].value_counts().head(show_top_n)
-        st.bar_chart(item_counts)
-
-        st.write(
-            """
-            These items appear most frequently in transactions and drive many of the 
-            strongest association rules. Machine learning models such as Apriori and 
-            FP-Growth can use this structure to suggest **cross-sell combinations** 
-            in an online retail setting.
-            """
-        )
-
-    st.markdown("### Apriori vs FP-Growth (from your analysis)")
-    st.write(
-        """
-        - Both algorithms identified **33 frequent itemsets** at a 2% support threshold.  
-        - Apriori runtime: **0.0872 seconds**  
-        - FP-Growth runtime: **0.6718 seconds**  
-        
-        Although Apriori was faster on this moderately sized dataset, FP-Growth scales 
-        better to larger, denser data and can uncover deeper multi-item patterns.  
-        These association rules can be used to design product bundles and 
-        “customers who bought X also bought Y” suggestions.
-        """
-    )
-
-streamlit run app.py

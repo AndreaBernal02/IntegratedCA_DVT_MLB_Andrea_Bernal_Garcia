@@ -1,4 +1,4 @@
-TransactionNo,Items,DateTime,Daypart,DayType
+transactionno,items,datetime,daypart,daytype
 1,Bread,2016-10-30 09:58:11,Morning,Weekend
 2,Scandinavian,2016-10-30 10:05:34,Morning,Weekend
 2,Scandinavian,2016-10-30 10:05:34,Morning,Weekend
