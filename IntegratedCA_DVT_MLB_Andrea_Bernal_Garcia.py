@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import os
 
 st.set_page_config(
     page_title="Book & Retail ML Dashboard",
@@ -31,12 +30,12 @@ st.markdown(
 def load_data():
     ratings = pd.read_csv("ratings.csv")
     books = pd.read_csv("books.csv")
+    bakery = pd.read_csv("bakery.csv")  
 
-    bakery = None
-    if os.path.exists("bakery.csv"):
-        bakery = pd.read_csv("bakery.csv")
-    elif os.path.exists("BreadBasket_DMS.csv"):
-        bakery = pd.read_csv("BreadBasket_DMS.csv")
+    if "datetime" in bakery.columns:
+        bakery["datetime"] = pd.to_datetime(bakery["datetime"])
+        bakery["weekday"] = bakery["datetime"].dt.day_name()
+        bakery["hour"] = bakery["datetime"].dt.hour
 
     return ratings, books, bakery
 
@@ -98,17 +97,21 @@ with tab1:
 
     with col3:
         st.subheader("Bread Basket (Bakery) Data")
-        if bakery is not None and "Transaction" in bakery.columns:
-            n_tx = bakery["Transaction"].nunique()
-        elif bakery is not None:
-            n_tx = len(bakery)
-        else:
-            n_tx = "N/A"
 
-        if bakery is not None and "Item" in bakery.columns:
-            n_items = bakery["Item"].nunique()
-        elif bakery is not None:
-            n_items = "N/A"
+        if "transactionno" in bakery.columns:
+            n_tx = bakery["transactionno"].nunique()
+        else:
+            n_tx = len(bakery)
+
+        if "Item" in bakery.columns:
+            item_col_ov = "Item"
+        elif "items" in bakery.columns:
+            item_col_ov = "items"
+        else:
+            item_col_ov = None
+
+        if item_col_ov is not None:
+            n_items = bakery[item_col_ov].nunique()
         else:
             n_items = "N/A"
 
@@ -153,7 +156,11 @@ with tab2:
 
     st.subheader(f"Top {top_n} most-rated books (with at least {min_ratings} ratings)")
 
-    book_popularity = ratings.groupby("book_id")["rating"].count().reset_index(name="rating_count")
+    book_popularity = (
+        ratings.groupby("book_id")["rating"]
+        .count()
+        .reset_index(name="rating_count")
+    )
     books_pop = books.merge(book_popularity, on="book_id", how="left").fillna({"rating_count": 0})
     books_filtered = books_pop[books_pop["rating_count"] >= min_ratings]
     top_books = books_filtered.sort_values("rating_count", ascending=False).head(top_n)
@@ -174,25 +181,64 @@ with tab2:
 with tab3:
     st.header("Market Basket Analysis (Bread Basket)")
 
-    if bakery is None:
-        st.warning(
-            "The bakery dataset file (bakery.csv or BreadBasket_DMS.csv) "
-            "is not available in this app. The Market Basket visualisation "
-            "cannot be displayed here, but the analysis is described in the report."
-        )
+    st.subheader("How would you like to explore the bakery data?")
+
+    view = st.radio(
+        "Choose a summary view",
+        ["Top items", "Transactions by weekday", "Transactions by hour of day"],
+        horizontal=False
+    )
+
+    if "Item" in bakery.columns:
+        item_col = "Item"
+    elif "items" in bakery.columns:
+        item_col = "items"
     else:
+        st.write("The bakery dataset does not contain an item column.")
+        st.stop()
+
+    if view == "Top items":
         st.subheader(f"Top {top_n} most frequently purchased items")
+        item_counts = bakery[item_col].value_counts().head(top_n)
+        st.bar_chart(item_counts)
 
-        if "Item" in bakery.columns:
-            item_counts = bakery["Item"].value_counts().head(top_n)
-            st.bar_chart(item_counts)
+        st.write(
+            """
+            These items appear most often in customer baskets.
+            Market Basket Analysis techniques (Apriori and FP-Growth) can identify
+            co-purchase patterns to support cross-selling and personalised recommendations.
+            """
+        )
 
+    elif view == "Transactions by weekday":
+        if "weekday" in bakery.columns:
+            st.subheader("Transactions by day of the week")
+            weekday_counts = bakery["weekday"].value_counts().reindex(
+                ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                fill_value=0
+            )
+            st.bar_chart(weekday_counts)
             st.write(
                 """
-                These items appear most often in customer baskets.
-                Market Basket Analysis techniques (Apriori and FP-Growth) can identify
-                co-purchase patterns to support cross-selling and personalised recommendations.
+                This chart shows which days are busiest. Peaks on particular days
+                can be used to time promotions or staffing levels in an online or
+                physical retail context.
                 """
             )
         else:
-            st.write("The bakery dataset does not contain an 'Item' column as expected.")
+            st.write("Weekday information is not available in the dataset.")
+
+    elif view == "Transactions by hour of day":
+        if "hour" in bakery.columns:
+            st.subheader("Transactions by hour of day")
+            hour_counts = bakery["hour"].value_counts().sort_index()
+            st.bar_chart(hour_counts)
+            st.write(
+                """
+                This chart highlights when during the day customers are most active.
+                For an online retail business, this can inform when to send marketing 
+                emails or when to highlight certain offers on the website.
+                """
+            )
+        else:
+            st.write("Hour-of-day information is not available in the dataset.")
