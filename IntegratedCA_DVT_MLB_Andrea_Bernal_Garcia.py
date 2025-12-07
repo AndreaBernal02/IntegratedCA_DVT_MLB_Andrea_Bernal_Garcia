@@ -1,9 +1,9 @@
+import os
 import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import altair as alt
-from pathlib import Path
+import plotly.express as px
 
 st.set_page_config(
     page_title="Book & Retail ML Dashboard",
@@ -11,6 +11,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Larger fonts and simple styling for 65+ users
 st.markdown(
     """
     <style>
@@ -41,25 +42,11 @@ def load_data():
 
     return ratings, books, bakery
 
-
-def maybe_play_audio(path_str, caption):
-    path = Path(path_str)
-    with st.expander(f"Prefer listening? {caption}"):
-        if path.exists():
-            st.audio(str(path), format="audio/mp3")
-        else:
-            st.write(
-                """
-                Audio explanation can be added here.  
-                For now, please read the short text explanations below.
-                """
-            )
-
-
 ratings, books, bakery = load_data()
 
+# Sidebar controls with simple tooltips
 st.sidebar.title("Dashboard Controls")
-st.sidebar.write("Use these simple options to explore the data.")
+st.sidebar.write("Use these options to explore the data.")
 
 min_ratings = st.sidebar.slider(
     "Minimum ratings per book",
@@ -67,7 +54,7 @@ min_ratings = st.sidebar.slider(
     max_value=2000,
     value=100,
     step=50,
-    help="Only show books that have at least this many ratings. Higher values focus on more popular books."
+    help="Only show books that have at least this many ratings."
 )
 
 top_n = st.sidebar.slider(
@@ -76,25 +63,21 @@ top_n = st.sidebar.slider(
     max_value=20,
     value=10,
     step=1,
-    help="Controls how many top books or items are displayed in the tables and charts."
+    help="Choose how many top books or items you want to see."
 )
 
 tab1, tab2, tab3 = st.tabs(["Overview", "Book Ratings & ML", "Market Basket"])
 
-# =======================
-# TAB 1 – OVERVIEW
-# =======================
+# ============= OVERVIEW TAB =============
 with tab1:
     st.header("Overview of the Datasets")
 
     st.write(
         """
         This dashboard summarises key patterns in book ratings and retail transactions.  
-        The design uses larger text, clear spacing, and simple choices to support adults aged 65+.
+        It uses larger text, a clear layout, and a small number of controls to support adults aged 65+.
         """
     )
-
-    maybe_play_audio("audio_overview.mp3", "Overview of the datasets")
 
     col1, col2, col3 = st.columns(3)
 
@@ -114,9 +97,8 @@ with tab1:
         st.write(f"Approximate matrix density: **{density:.4f}%**")
         st.write(
             """
-            Only a very small fraction of all possible user–book pairs are rated.  
-            This “sparse” structure is typical in online retail platforms and is suitable for
-            collaborative filtering models that work with missing data.
+            A very sparse rating matrix like this is typical for recommender systems.  
+            It is suitable for **collaborative filtering** models used in online retail.
             """
         )
 
@@ -144,9 +126,8 @@ with tab1:
         st.metric("Number of unique items", f"{n_items}")
         st.write(
             """
-            Each transaction contains a set of items bought together.  
-            This structure is ideal for Market Basket Analysis, for example to discover
-            which products are frequently purchased together.
+            Each transaction contains a set of items bought together,  
+            which makes this dataset ideal for **Market Basket Analysis**.
             """
         )
 
@@ -156,64 +137,70 @@ with tab1:
 
     st.write(
         """
-        • They contain structured behavioural data (ratings and items in baskets).  
-        • They include many users, books and transactions, allowing reliable pattern learning.  
-        • They reflect real-world retail scenarios, such as recommending books and co-purchased items.  
+        • They contain structured behavioural data (user ratings and items in each basket).  
+        • They include many users, items, and transactions, supporting reliable model training.  
+        • They match real-world retail scenarios such as book recommendations and co-purchase patterns.  
         """
     )
 
-    with st.expander("How this supports the assignment questions (Q1–Q4)"):
+    with st.expander("How this links to the assignment questions"):
         st.write(
             """
-            - **Q1 (Recommendation systems)**: The ratings dataset allows user–user, item–item and 
-              content-based comparisons between books and readers.  
-            - **Q2 (Market Basket Analysis)**: The bakery transactions allow Apriori and FP-Growth
-              to discover frequent itemsets and association rules.  
-            - **Q3 (Dashboard for 65+ users)**: The layout here focuses on clarity, larger fonts and
-              simple choices, in line with accessibility needs.  
-            - **Q4 (Data preparation)**: Creating clean IDs, handling missing values and deriving 
-              variables like weekday/hour makes the data ready for machine learning and visualisation.
+            - **Question 1**: The book ratings dataset supports content-based and collaborative filtering.  
+            - **Question 2**: The bakery dataset is ideal for Apriori and FP-Growth association rule mining.  
+            - **Question 3**: The dashboard is designed for older adults with clear fonts and minimal controls.  
+            - **Question 4**: All preprocessing steps (e.g. creating weekdays, hours) are done to support these visualisations.
             """
         )
 
-# =======================
-# TAB 2 – BOOK RATINGS & ML
-# =======================
+# ============= BOOK RATINGS & ML TAB =============
 with tab2:
     st.header("Book Ratings and Recommendation Modelling")
 
-    maybe_play_audio("audio_ratings_tab.mp3", "Explanation of the Book Ratings & ML tab")
-
     st.subheader("Distribution of ratings (1–5)")
 
-    fig, ax = plt.subplots()
-    rating_counts = ratings["rating"].value_counts().sort_index()
-    colors = ["#264653", "#2a9d8f", "#e9c46a", "#f4a261", "#e76f51"][: len(rating_counts)]
-    rating_counts.plot(kind="bar", ax=ax, color=colors)
-    ax.set_xlabel("Rating score")
-    ax.set_ylabel("Number of ratings")
-    ax.set_title("How users rate books")
-    ax.tick_params(axis="x", rotation=0)
-    st.pyplot(fig)
-
-    st.markdown(
-        """
-        **How to read this chart:**  
-        Each bar shows how many times users gave that rating score.  
-        Taller bars mean that score is more common.
-        """
+    rating_counts = (
+        ratings["rating"]
+        .value_counts()
+        .sort_index()
+        .reset_index()
+        .rename(columns={"index": "rating", "rating": "count"})
     )
 
-    with st.expander("What does this rating distribution tell us? (Q1 context)"):
+    fig_ratings = px.bar(
+        rating_counts,
+        x="rating",
+        y="count",
+        color="rating",
+        text="count",
+        labels={"rating": "Rating score", "count": "Number of ratings"},
+        title="How users rate books"
+    )
+    fig_ratings.update_traces(textposition="outside")
+    fig_ratings.update_layout(xaxis=dict(dtick=1))
+
+    st.plotly_chart(fig_ratings, use_container_width=True)
+
+    st.caption(
+        "How to read this chart: each bar shows how many ratings were given for a particular score (1–5)."
+    )
+
+    with st.expander("What does this tell us about user behaviour?"):
         st.write(
             """
-            - Most ratings are in the higher range (for example 4 and 5).  
-            - This is common in online platforms where users are often positive.  
-            - For **machine learning models**, this means:
-              - Predictions are often biased towards higher scores.
-              - Evaluation metrics should consider that “low” ratings are relatively rare.  
-            - In a real retail platform, this pattern suggests that users are generally satisfied
-              and are willing to give feedback, which is ideal for recommender systems.
+            - The higher bars at ratings 4–5 show that users are more likely to give positive ratings.  
+            - Lower frequencies at ratings 1–2 indicate fewer very negative experiences.  
+            - This pattern is common in real-world platforms and affects how we evaluate recommender models.
+            """
+        )
+
+    with st.expander("How does this relate to content-based vs collaborative filtering?"):
+        st.write(
+            """
+            - **Content-based filtering** uses book attributes (e.g. genres, authors) and a user’s own ratings history.  
+            - **Collaborative filtering** (user–user or item–item) uses patterns across many users and items.  
+            - Because the rating matrix is sparse but has many positive ratings, **item–item collaborative filtering**
+              can capture similarities between books based on who liked them.
             """
         )
 
@@ -228,72 +215,61 @@ with tab2:
     books_filtered = books_pop[books_pop["rating_count"] >= min_ratings]
     top_books = books_filtered.sort_values("rating_count", ascending=False).head(top_n)
 
+    # Horizontal interactive bar chart for popular books
+    fig_top_books = px.bar(
+        top_books.sort_values("rating_count"),
+        x="rating_count",
+        y="title",
+        orientation="h",
+        text="rating_count",
+        color="rating_count",
+        labels={"rating_count": "Number of ratings", "title": "Book title"},
+        title="Most-rated books"
+    )
+    fig_top_books.update_traces(textposition="outside")
+    fig_top_books.update_layout(yaxis=dict(title="Book title"))
+
+    st.plotly_chart(fig_top_books, use_container_width=True)
+
+    st.caption(
+        "How to read this chart: each bar represents a book, and the length shows how many ratings it has received."
+    )
+
     st.dataframe(
         top_books[["title", "authors", "rating_count"]].reset_index(drop=True),
         use_container_width=True
     )
 
-    st.markdown(
-        """
-        **How to read this table:**  
-        - Each row is a book.  
-        - The “rating_count” column shows how many ratings the book received.  
-        - Books at the top are the most popular and give the strongest signal to the recommender.
-        """
-    )
-
-    with st.expander("How this links to recommendation models (Q1: content-based vs collaborative filtering)"):
+    with st.expander("Why are these books important for recommendation models?"):
         st.write(
             """
-            **Collaborative filtering (user–user and item–item)**  
-            - Uses the **behaviour** of many users.  
-            - If two users rate the same books similarly, they are treated as “similar users”.  
-            - If two books are rated similarly by many users, they are treated as “similar items”.  
-            - In your notebook, the **item–item collaborative filtering** model achieved
-              an RMSE around **0.884**, which shows good prediction accuracy for ratings.  
-
-            **User–user collaborative filtering**  
-            - Finds users with similar rating patterns and recommends books they liked.  
-            - Works well when many users have overlapping histories.  
-            - Can struggle when users have very few ratings (cold-start problem).  
-
-            **Item–item collaborative filtering**  
-            - Compares books based on who rated them and how.  
-            - More stable in large catalogues with many items because item patterns change
-              more slowly than individual users.  
-            - Works very well for “Customers who liked this book also liked…”.  
-
-            **Content-based filtering (conceptual comparison)**  
-            - Focuses on **attributes of the book itself**, such as genre, author, keywords,
-              description or tags.  
-            - Recommends items that are similar in content to items the user already liked.  
-            - Does not require other users’ data and is less affected by sparsity.  
-
-            **Comparison for an online book retailer**  
-            - Collaborative filtering (especially item–item) is powerful for exploiting
-              crowd behaviour to predict what a user will enjoy next.  
-            - Content-based filtering is safer when a new book has no ratings yet, or when the
-              user has very specific tastes.  
-            - The best business impact usually comes from a **hybrid system** that combines
-              both: using item–item CF for popular books and content features for new or niche titles.
+            - Popular books have many ratings, which makes their estimated preferences more reliable.  
+            - **Item–item collaborative filtering** uses these patterns to find books that are frequently liked by the same users.  
+            - In the notebook analysis, item–item collaborative filtering achieved RMSE ≈ 0.884,  
+              showing that it can accurately predict user ratings in this scenario.
             """
         )
 
-# =======================
-# TAB 3 – MARKET BASKET
-# =======================
+    with st.expander("Link to assignment Question 1"):
+        st.write(
+            """
+            - Here you can explain in your report how content-based filtering would use book features  
+              (e.g. tags, genres) compared to collaborative filtering, which uses rating patterns.  
+            - Use these visuals to justify why collaborative filtering is effective with this dataset  
+              and discuss limitations such as sparsity and cold-start problems.
+            """
+        )
+
+# ============= MARKET BASKET TAB =============
 with tab3:
     st.header("Market Basket Analysis (Bread Basket)")
-
-    maybe_play_audio("audio_market_basket.mp3", "Explanation of the Market Basket Analysis tab")
 
     st.subheader("How would you like to explore the bakery data?")
 
     view = st.radio(
         "Choose a summary view",
         ["Top items", "Transactions by weekday", "Transactions by hour of day"],
-        horizontal=False,
-        help="Pick one option to see different summaries of what customers buy."
+        horizontal=True
     )
 
     if "Item" in bakery.columns:
@@ -307,165 +283,129 @@ with tab3:
     if view == "Top items":
         st.subheader(f"Top {top_n} most frequently purchased items")
 
-        item_counts = bakery[item_col].value_counts().head(top_n)
-        df_items = item_counts.reset_index()
-        df_items.columns = ["Item", "Count"]
-
-        chart_items = (
-            alt.Chart(df_items)
-            .mark_bar()
-            .encode(
-                x=alt.X("Item:N", sort="-y", title="Item"),
-                y=alt.Y("Count:Q", title="Number of times purchased"),
-                color=alt.Color("Item:N", legend=None),
-                tooltip=["Item", "Count"]
-            )
+        item_counts = (
+            bakery[item_col]
+            .value_counts()
+            .head(top_n)
+            .reset_index()
+            .rename(columns={"index": "item", item_col: "count"})
         )
 
-        st.altair_chart(chart_items, use_container_width=True)
+        fig_items = px.bar(
+            item_counts.sort_values("count"),
+            x="count",
+            y="item",
+            orientation="h",
+            text="count",
+            color="item",
+            labels={"count": "Number of times purchased", "item": "Item"},
+            title="Most popular items"
+        )
+        fig_items.update_traces(textposition="outside")
+        st.plotly_chart(fig_items, use_container_width=True)
 
-        st.markdown(
-            """
-            **How to read this chart:**  
-            - Each bar is a product sold in the bakery.  
-            - The height of the bar shows how often that item appears in customer baskets.  
-            - Items with taller bars are the most popular.
-            """
+        st.caption(
+            "How to read this chart: each bar shows how often a particular item appears in customer baskets."
         )
 
-        with st.expander("What does this tell us about customer behaviour?"):
+        with st.expander("What does this tell us about shopping patterns?"):
             st.write(
                 """
-                - Popular items such as coffee, bread or pastries form the **core basket**.  
-                - These items are ideal for:
-                  - Cross-selling (suggesting complementary products).  
-                  - Promotions, bundles and loyalty offers.  
-                - In an online shop, these products could be highlighted as “frequently bought”
-                  or used as anchors for recommendation rules.
+                - Items with the highest counts are the core products that drive most transactions.  
+                - These are good candidates for promotions or for use as antecedents in association rules  
+                  (e.g. “If a customer buys X, they are likely to also buy Y”).  
+                """
+            )
+
+        with st.expander("How this links to Apriori and FP-Growth (Question 2)"):
+            st.write(
+                """
+                - **Apriori** and **FP-Growth** both use item frequencies as a starting point to  
+                  discover frequent itemsets and association rules.  
+                - The patterns you see here help explain why certain rules are found, such as  
+                  “Bread → Coffee” if those items often appear together.
                 """
             )
 
     elif view == "Transactions by weekday":
-        st.subheader("Transactions by day of the week")
-
         if "weekday" in bakery.columns:
-            weekday_counts = bakery["weekday"].value_counts()
-            weekday_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-            weekday_counts = weekday_counts.reindex(weekday_order, fill_value=0)
+            st.subheader("Transactions by day of the week")
 
-            df_weekday = weekday_counts.reset_index()
-            df_weekday.columns = ["Weekday", "Transactions"]
-
-            chart_weekday = (
-                alt.Chart(df_weekday)
-                .mark_bar()
-                .encode(
-                    x=alt.X("Weekday:N", sort=weekday_order, title="Day of the week"),
-                    y=alt.Y("Transactions:Q", title="Number of transactions"),
-                    color=alt.Color("Weekday:N", legend=None),
-                    tooltip=["Weekday", "Transactions"]
+            weekday_counts = (
+                bakery["weekday"]
+                .value_counts()
+                .reindex(
+                    ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                    fill_value=0
                 )
+                .reset_index()
+                .rename(columns={"index": "weekday", "weekday": "count"})
             )
 
-            st.altair_chart(chart_weekday, use_container_width=True)
+            fig_weekday = px.bar(
+                weekday_counts,
+                x="weekday",
+                y="count",
+                text="count",
+                color="weekday",
+                labels={"weekday": "Day of week", "count": "Number of transactions"},
+                title="Transactions across the week"
+            )
+            fig_weekday.update_traces(textposition="outside")
+            st.plotly_chart(fig_weekday, use_container_width=True)
 
-            st.markdown(
-                """
-                **How to read this chart:**  
-                - Each bar shows how many transactions happen on that day.  
-                - Taller bars show busier days in the bakery.  
-                - This can indicate which days are best for special offers or staffing.
-                """
+            st.caption(
+                "How to read this chart: each bar shows how many transactions occurred on that day of the week."
             )
 
-            with st.expander("Business interpretation"):
+            with st.expander("What does this tell us about business operations?"):
                 st.write(
                     """
-                    - Peaks on specific days (for example weekends) indicate higher demand.  
-                    - In an online retail context, such patterns can be used to:
-                      - Time email campaigns or app notifications.  
-                      - Adjust inventory and delivery planning.  
+                    - Peaks on certain days indicate when demand is highest.  
+                    - This can guide staffing, stock levels, and the timing of online promotions.  
+                    - For example, if weekends are busiest, cross-selling recommendations  
+                      could be emphasised more strongly then.
                     """
                 )
+
         else:
             st.write("Weekday information is not available in the dataset.")
 
     elif view == "Transactions by hour of day":
-        st.subheader("Transactions by hour of day")
-
         if "hour" in bakery.columns:
-            hour_counts = bakery["hour"].value_counts().sort_index()
-            df_hour = hour_counts.reset_index()
-            df_hour.columns = ["Hour", "Transactions"]
+            st.subheader("Transactions by hour of day")
 
-            chart_hour = (
-                alt.Chart(df_hour)
-                .mark_bar()
-                .encode(
-                    x=alt.X("Hour:O", title="Hour of day"),
-                    y=alt.Y("Transactions:Q", title="Number of transactions"),
-                    color=alt.Color("Hour:O", legend=None),
-                    tooltip=["Hour", "Transactions"]
-                )
+            hour_counts = (
+                bakery["hour"]
+                .value_counts()
+                .sort_index()
+                .reset_index()
+                .rename(columns={"index": "hour", "hour": "count"})
             )
 
-            st.altair_chart(chart_hour, use_container_width=True)
+            fig_hour = px.bar(
+                hour_counts,
+                x="hour",
+                y="count",
+                text="count",
+                color="hour",
+                labels={"hour": "Hour of day", "count": "Number of transactions"},
+                title="Transactions across the day"
+            )
+            fig_hour.update_traces(textposition="outside")
+            st.plotly_chart(fig_hour, use_container_width=True)
 
-            st.markdown(
-                """
-                **How to read this chart:**  
-                - Each bar shows how many transactions occur during a given hour.  
-                - The busiest hours are those with the tallest bars.  
-                - In an online shop, this can inform when to display time-limited offers.
-                """
+            st.caption(
+                "How to read this chart: the height of each bar shows how many transactions occurred at that hour."
             )
 
-            with st.expander("Business interpretation"):
+            with st.expander("How can this support online retail decisions?"):
                 st.write(
                     """
-                    - Peak hours show when customers are most active.  
-                    - For an online retailer, these windows are ideal for:
-                      - Highlighting cross-sell recommendations.  
-                      - Running flash promotions or free-delivery windows.  
+                    - Hours with high activity are good times to show targeted recommendations or send email campaigns.  
+                    - Low-activity periods might be used for system maintenance or A/B testing.  
+                    - In your report, you can link these temporal patterns to promotional and operational strategies.
                     """
                 )
         else:
             st.write("Hour-of-day information is not available in the dataset.")
-
-    st.markdown("---")
-
-    with st.expander("Apriori vs FP-Growth and how this supports Q2"):
-        st.write(
-            """
-            **Market Basket Analysis goal**  
-            - Find item combinations that appear together frequently in the same basket.  
-            - Produce **association rules** such as “If a customer buys A and B, they are
-              likely to also buy C”.  
-
-            **Key concepts**  
-            - **Support**: How often an itemset appears in all transactions.  
-            - **Confidence**: How often the rule is correct, given the left-hand side.  
-            - **Lift**: How much more likely items are bought together than by chance.  
-
-            **Apriori algorithm**  
-            - Starts from single items and gradually builds larger itemsets.  
-            - Uses the **Apriori property**: if a combination is frequent, all its subsets are frequent.  
-            - Can be slower on very large datasets because it generates many candidate sets.  
-
-            **FP-Growth algorithm**  
-            - Compresses the data into a **Frequent Pattern Tree (FP-tree)**.  
-            - Finds frequent patterns without generating all candidate itemsets explicitly.  
-            - Usually faster and more memory-efficient on large, dense datasets.  
-
-            **Comparison of results (conceptual)**  
-            - With the same support and confidence thresholds, **Apriori and FP-Growth
-              should find very similar frequent itemsets and rules**.  
-            - Differences may appear in:
-              - Performance (FP-Growth is faster).  
-              - Ordering of results or ties.  
-            - For the bakery dataset, both methods provide rules that can support:
-              - Cross-selling (“People who buy coffee often buy cake”).  
-              - Product placement in a physical shop.  
-              - Recommendation panels in an online store (“Frequently bought together”).  
-            """
-        )
